@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fajr Wake-Up - Sit-Up Challenge</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 50%, #415a77 100%);
+      min-height: 100vh;
+      color: #fff;
+      padding: 20px;
+    }
+    .container { max-width: 600px; margin: 0 auto; text-align: center; }
+    h1 { font-size: 2rem; margin-bottom: 10px; color: #ffd700; }
+    .counter { font-size: 4rem; font-weight: bold; color: #ffd700; margin: 20px 0; }
+    .progress { width: 100%; height: 20px; background: rgba(255,255,255,0.2); border-radius: 10px; overflow: hidden; margin: 20px 0; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #ffd700, #ff6b6b); width: 0%; transition: width 0.3s; }
+    .video-wrap { display: none; margin: 20px 0; border-radius: 15px; overflow: hidden; }
+    .video-wrap.active { display: block; }
+    #video { width: 100%; max-width: 400px; transform: scaleX(-1); }
+    #canvas { position: absolute; top: 0; left: 0; width: 100%; max-width: 400px; transform: scaleX(-1); }
+    .video-container { position: relative; display: inline-block; }
+    .btn {
+      padding: 15px 30px;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      margin: 10px;
+      transition: transform 0.2s;
+    }
+    .btn:active { transform: scale(0.95); }
+    .btn-start { background: linear-gradient(135deg, #ffd700, #ff9500); color: #000; }
+    .btn-stop { background: linear-gradient(135deg, #ff6b6b, #ff4757); color: #fff; }
+    .btn-test { background: linear-gradient(135deg, #ff4757, #c0392b); color: #fff; }
+    .message { font-size: 1.2rem; margin: 20px 0; min-height: 30px; }
+    .message.alarm { color: #ff6b6b; animation: pulse 0.5s infinite; }
+    .message.success { color: #2ed573; }
+    .message.waiting { color: #ffd700; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .instructions { background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; margin-top: 30px; text-align: left; }
+    .instructions h3 { color: #ffd700; margin-bottom: 10px; }
+    .instructions li { padding: 5px 0; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌅 Fajr Wake-Up Challenge</h1>
+    <p>Complete 10 sit-ups to silence the alarm!</p>
+    
+    <div class="counter"><span id="count">0</span> / 10</div>
+    <div class="progress"><div class="progress-fill" id="progress"></div></div>
+    <p class="message" id="message">Click "Test Alarm" to try it now</p>
+    
+    <div class="video-container" id="videoContainer">
+      <video id="video" playsinline></video>
+      <canvas id="canvas"></canvas>
+    </div>
+    
+    <div>
+      <button class="btn btn-test" id="testBtn">🔔 Test Alarm Now</button>
+      <button class="btn btn-stop hidden" id="stopBtn">⏹ Stop Alarm</button>
+    </div>
+    
+    <div class="instructions">
+      <h3>How it works:</h3>
+      <ul>
+        <li>Click "Test Alarm" to start</li>
+        <li>Allow camera access</li>
+        <li>Lie on your back, get in frame</li>
+        <li>Do 10 sit-ups - camera tracks your pose</li>
+        <li>Alarm stops when you hit 10!</li>
+      </ul>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js"></script>
+
+  <script>
+    console.log('App starting...');
+    
+    let alarmActive = false;
+    let sitUpCount = 0;
+    let pose = null;
+    let camera = null;
+    let inSitUp = false;
+    let lastAngle = null;
+    let sitUpComplete = false;
+    
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const countEl = document.getElementById('count');
+    const progressEl = document.getElementById('progress');
+    const messageEl = document.getElementById('message');
+    const testBtn = document.getElementById('testBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const videoContainer = document.getElementById('videoContainer');
+    
+    console.log('Elements loaded');
+    
+    function playAlarm() {
+      console.log('Playing alarm...');
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      
+      function playTone() {
+        if (!alarmActive) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.value = 880;
+        osc.type = 'square';
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+        setTimeout(playTone, 500);
+      }
+      playTone();
+    }
+    
+    function stopAlarm() {
+      alarmActive = false;
+    }
+    
+    function initPose() {
+      console.log('Initializing pose...');
+      pose = new Pose({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/${file}`
+      });
+      
+      pose.setOptions({
+        modelComplexity: 1,
+        smoothLandmarks: true,
+        enableSegmentation: false,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+      
+      pose.onResults(onPoseResults);
+      console.log('Pose initialized');
+    }
+    
+    function onPoseResults(results) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      if (results.poseLandmarks) {
+        drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, {color: '#ffd700', lineWidth: 3});
+        drawLandmarks(ctx, results.poseLandmarks, {color: '#ff6b6b', lineWidth: 2, radius: 4});
+        detectSitUp(results.poseLandmarks);
+      }
+    }
+    
+    function detectSitUp(landmarks) {
+      if (!alarmActive) return;
+      
+      const leftShoulder = landmarks[11];
+      const leftHip = landmarks[23];
+      const leftKnee = landmarks[25];
+      
+      if (!leftShoulder || !leftHip || !leftKnee) return;
+      
+      const shoulder = {x: leftShoulder.x, y: leftShoulder.y};
+      const hip = {x: leftHip.x, y: leftHip.y};
+      const knee = {x: leftKnee.x, y: leftKnee.y};
+      
+      const angle = calculateAngle(shoulder, hip, knee);
+      
+      if (angle < 110 && !inSitUp) {
+        inSitUp = true;
+        lastAngle = angle;
+      } else if (angle > 150 && inSitUp && lastAngle < 110) {
+        if (!sitUpComplete) {
+          sitUpCount++;
+          updateCount();
+          sitUpComplete = true;
+          if (sitUpCount >= 10) alarmSolved();
+        }
+      } else if (angle > 160) {
+        sitUpComplete = false;
+      }
+      
+      if (angle > 120) lastAngle = angle;
+    }
+    
+    function calculateAngle(a, b, c) {
+      const rad = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
+      let angle = Math.abs(rad * 180 / Math.PI);
+      return angle > 180 ? 360 - angle : angle;
+    }
+    
+    function updateCount() {
+      countEl.textContent = sitUpCount;
+      progressEl.style.width = (sitUpCount * 10) + '%';
+      messageEl.textContent = `${10 - sitUpCount} more to go!`;
+    }
+    
+    function alarmSolved() {
+      stopAlarm();
+      messageEl.textContent = '🎉 Done! Alarm dismissed!';
+      messageEl.className = 'message success';
+      if (camera) { camera.stop(); camera = null; }
+      videoContainer.classList.remove('active');
+      stopBtn.classList.add('hidden');
+      testBtn.classList.remove('hidden');
+    }
+    
+    async function startAlarm() {
+      console.log('Starting alarm...');
+      alarmActive = true;
+      sitUpCount = 0;
+      inSitUp = false;
+      sitUpComplete = false;
+      lastAngle = null;
+      
+      countEl.textContent = '0';
+      progressEl.style.width = '0%';
+      messageEl.textContent = '🔔 ALARM! Do 10 sit-ups!';
+      messageEl.className = 'message alarm';
+      
+      testBtn.classList.add('hidden');
+      stopBtn.classList.remove('hidden');
+      videoContainer.classList.add('active');
+      
+      try {
+        initPose();
+        
+        camera = new Camera(video, {
+          onFrame: async () => {
+            if (pose) await pose.send({image: video});
+          },
+          width: 640,
+          height: 480
+        });
+        
+        await camera.start();
+        playAlarm();
+        console.log('Camera started');
+      } catch (e) {
+        console.error('Error:', e);
+        messageEl.textContent = 'Error: ' + e.message;
+      }
+    }
+    
+    function stopAlarmHandler() {
+      stopAlarm();
+      messageEl.textContent = 'Alarm stopped. Click "Test Alarm" to try again.';
+      messageEl.className = 'message waiting';
+      if (camera) { camera.stop(); camera = null; }
+      videoContainer.classList.remove('active');
+      stopBtn.classList.add('hidden');
+      testBtn.classList.remove('hidden');
+    }
+    
+    testBtn.addEventListener('click', () => {
+      console.log('Test button clicked');
+      startAlarm();
+    });
+    
+    stopBtn.addEventListener('click', stopAlarmHandler);
+    
+    console.log('Event listeners attached');
+  </script>
+</body>
+</html>
