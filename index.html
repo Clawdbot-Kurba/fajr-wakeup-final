@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Fajr Wake-Up - Squat Challenge</title>
+  <title>Fajr Wake-Up Challenge</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -17,7 +17,28 @@
     .container { max-width: 500px; margin: 0 auto; text-align: center; }
     h1 { font-size: 1.5rem; margin-bottom: 8px; color: #ffd700; }
     .subtitle { font-size: 0.9rem; color: #aaa; margin-bottom: 15px; }
-    .location-btn { background: #3498db; color: #fff; padding: 8px 16px; border: none; border-radius: 20px; font-size: 0.85rem; margin-bottom: 15px; cursor: pointer; }
+    
+    .screen { display: none; }
+    .screen.active { display: block; }
+    
+    /* Challenge Selection */
+    .challenge-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+    .challenge-card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 15px;
+      padding: 20px 15px;
+      cursor: pointer;
+      transition: transform 0.2s, background 0.2s;
+      border: 2px solid transparent;
+    }
+    .challenge-card:active { transform: scale(0.96); }
+    .challenge-card.selected { border-color: #ffd700; background: rgba(255,215,0,0.15); }
+    .challenge-card-icon { font-size: 2rem; margin-bottom: 8px; }
+    .challenge-card-title { font-weight: 600; margin-bottom: 4px; }
+    .challenge-card-desc { font-size: 0.75rem; color: #aaa; }
+    
+    /* Exercise Screen */
+    .location-btn { background: #3498db; color: #fff; padding: 10px 20px; border: none; border-radius: 25px; font-size: 0.9rem; margin-bottom: 15px; cursor: pointer; }
     .location-btn:disabled { opacity: 0.6; }
     .fajr-time { background: rgba(255,215,0,0.15); padding: 10px 20px; border-radius: 25px; display: inline-block; margin-bottom: 15px; }
     .fajr-time-label { font-size: 0.8rem; color: #aaa; }
@@ -31,6 +52,24 @@
     #video { width: 100%; max-width: 350px; transform: scaleX(-1); border-radius: 12px; }
     #canvas { position: absolute; top: 0; left: 0; width: 100%; max-width: 350px; transform: scaleX(-1); }
     .video-container { position: relative; display: inline-block; }
+    
+    /* Quiz Screen */
+    .quiz-question { font-size: 1.3rem; margin: 20px 0; padding: 20px; background: rgba(255,255,255,0.1); border-radius: 12px; }
+    .quiz-options { display: grid; gap: 10px; margin: 20px 0; }
+    .quiz-option {
+      padding: 15px;
+      background: rgba(255,255,255,0.1);
+      border: 2px solid transparent;
+      border-radius: 10px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .quiz-option:active { transform: scale(0.98); }
+    .quiz-option.correct { background: rgba(46, 213, 115, 0.3); border-color: #2ed573; }
+    .quiz-option.wrong { background: rgba(255, 107, 107, 0.3); border-color: #ff6b6b; }
+    .quiz-score { font-size: 1.1rem; margin: 15px 0; }
+    
     .btn {
       padding: 14px 28px;
       font-size: 1rem;
@@ -42,82 +81,150 @@
       -webkit-tap-highlight-color: transparent;
     }
     .btn:active { transform: scale(0.96); }
-    .btn-start { background: linear-gradient(135deg, #ffd700, #ff9500); color: #000; font-weight: 600; }
+    .btn-primary { background: linear-gradient(135deg, #ffd700, #ff9500); color: #000; font-weight: 600; }
     .btn-stop { background: linear-gradient(135deg, #ff6b6b, #ff4757); color: #fff; font-weight: 600; }
     .btn-test { background: linear-gradient(135deg, #ff4757, #c0392b); color: #fff; font-weight: 600; }
+    
     .message { font-size: 1.1rem; margin: 15px 0; min-height: 25px; }
     .message.alarm { color: #ff6b6b; animation: pulse 0.5s infinite; }
     .message.success { color: #2ed573; font-weight: 600; }
     .message.waiting { color: #ffd700; }
-    .message.info { color: #3498db; font-size: 0.9rem; }
+    .message.info { color: #3498db; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-    .instructions { background: rgba(255,255,255,0.08); border-radius: 12px; padding: 15px; margin-top: 20px; text-align: left; }
-    .instructions h3 { color: #ffd700; margin-bottom: 8px; font-size: 1rem; }
-    .instructions li { padding: 4px 0; font-size: 0.85rem; color: #ccc; }
-    .hidden { display: none !important; }
+    
     .location-status { font-size: 0.8rem; color: #888; margin-top: 5px; }
+    .hidden { display: none !important; }
     
     @media (max-width: 400px) {
       h1 { font-size: 1.3rem; }
       .counter { font-size: 2.8rem; }
-      .btn { padding: 12px 24px; font-size: 0.95rem; }
-      #video, #canvas { max-width: 100%; }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🌅 Fajr Wake-Up</h1>
-    <p class="subtitle">Complete 10 squats to silence the alarm!</p>
+    <p class="subtitle">Choose your challenge to dismiss the alarm</p>
     
-    <button class="location-btn" id="locationBtn">📍 Get My Location</button>
-    <p class="location-status" id="locationStatus"></p>
-    
-    <div class="fajr-time" id="fajrTimeBox" style="display:none">
-      <div class="fajr-time-label">FAJR</div>
-      <div class="fajr-time-value" id="fajrValue">--:--</div>
+    <!-- Challenge Selection Screen -->
+    <div class="screen active" id="selectScreen">
+      <p style="margin-bottom: 15px; color: #aaa;">What challenge will wake you up?</p>
+      
+      <div class="challenge-grid">
+        <div class="challenge-card" data-challenge="squat">
+          <div class="challenge-card-icon">🏋️</div>
+          <div class="challenge-card-title">10 Squats</div>
+          <div class="challenge-card-desc">Do 10 squats</div>
+        </div>
+        <div class="challenge-card" data-challenge="jumpingjack">
+          <div class="challenge-card-icon">⭐</div>
+          <div class="challenge-card-title">20 Jumping Jacks</div>
+          <div class="challenge-card-desc">Do 20 jumping jacks</div>
+        </div>
+        <div class="challenge-card" data-challenge="math">
+          <div class="challenge-card-icon">🔢</div>
+          <div class="challenge-card-title">Math Quiz</div>
+          <div class="challenge-card-desc">5 quick math problems</div>
+        </div>
+        <div class="challenge-card" data-challenge="geo">
+          <div class="challenge-card-icon">🌍</div>
+          <div class="challenge-card-title">Geography Quiz</div>
+          <div class="challenge-card-desc">5 geography questions</div>
+        </div>
+      </div>
+      
+      <button class="btn btn-primary" id="continueBtn" disabled>Continue →</button>
     </div>
     
-    <div class="counter"><span id="count">0</span> <span>/ 10</span></div>
-    <div class="progress"><div class="progress-fill" id="progress"></div></div>
-    <p class="message" id="message">Click "Test Alarm" or wait for Fajr</p>
-    
-    <div class="video-container" id="videoContainer">
-      <video id="video" playsinline></video>
-      <canvas id="canvas"></canvas>
+    <!-- Exercise Setup Screen -->
+    <div class="screen" id="exerciseScreen">
+      <button class="location-btn" id="locationBtn">📍 Get My Location</button>
+      <p class="location-status" id="locationStatus"></p>
+      
+      <div class="fajr-time" id="fajrTimeBox" style="display:none">
+        <div class="fajr-time-label">FAJR</div>
+        <div class="fajr-time-value" id="fajrValue">--:--</div>
+      </div>
+      
+      <div class="counter"><span id="count">0</span> <span>/ 10</span></div>
+      <div class="progress"><div class="progress-fill" id="progress"></div></div>
+      <p class="message" id="message">Click "Test Alarm" or wait for Fajr</p>
+      
+      <div class="video-container" id="videoContainer">
+        <video id="video" playsinline></video>
+        <canvas id="canvas"></canvas>
+      </div>
+      
+      <div>
+        <button class="btn btn-test" id="testBtn">🔔 Test Alarm</button>
+        <button class="btn btn-stop hidden" id="stopBtn">⏹ Stop</button>
+      </div>
     </div>
     
-    <div>
-      <button class="btn btn-test" id="testBtn">🔔 Test Alarm</button>
-      <button class="btn btn-stop hidden" id="stopBtn">⏹ Stop</button>
-    </div>
-    
-    <div class="instructions">
-      <h3>How it works:</h3>
-      <ul>
-        <li>Click location to get Fajr time for your area</li>
-        <li>When Fajr arrives, alarm goes off</li>
-        <li>Allow camera, stand in frame (full body)</li>
-        <li>Do 10 squats to dismiss alarm</li>
-      </ul>
+    <!-- Quiz Screen -->
+    <div class="screen" id="quizScreen">
+      <div class="quiz-score">Question <span id="qNum">1</span>/5</div>
+      <div class="quiz-question" id="qText">Loading...</div>
+      <div class="quiz-options" id="qOptions"></div>
+      <p class="message" id="quizMessage"></p>
+      <button class="btn btn-primary hidden" id="nextQBtn">Next Question →</button>
+      <button class="btn btn-primary hidden" id="retryQuizBtn">Try Again</button>
     </div>
   </div>
 
+  <!-- MediaPipe for exercises -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js"></script>
 
   <script>
+    // State
+    let selectedChallenge = null;
     let alarmActive = false;
-    let sitUpCount = 0;
+    let repCount = 0;
+    let targetReps = 10;
     let pose = null;
     let camera = null;
-    let inSitUp = false;
+    let inRep = false;
     let lastAngle = null;
-    let sitUpComplete = false;
+    let repComplete = false;
     let userLat = null, userLon = null;
     let fajrTime = null;
     let alarmTriggered = false;
+    
+    // Quiz state
+    let currentQuestion = 0;
+    let quizScore = 0;
+    let quizAnswered = false;
+    
+    const mathQuestions = [
+      { q: "What is 7 × 8?", options: ["54", "56", "58", "64"], correct: 1 },
+      { q: "What is 144 ÷ 12?", options: ["10", "11", "12", "14"], correct: 2 },
+      { q: "What is 15 + 28?", options: ["41", "43", "45", "42"], correct: 1 },
+      { q: "What is 100 - 37?", options: ["63", "62", "64", "61"], correct: 0 },
+      { q: "What is 9²?", options: ["72", "81", "90", "99"], correct: 1 },
+      { q: "What is 6 × 12?", options: ["68", "72", "76", "82"], correct: 1 },
+      { q: "What is 200 ÷ 5?", options: ["35", "40", "45", "50"], correct: 1 },
+      { q: "What is 23 + 47?", options: ["68", "70", "72", "74"], correct: 1 },
+    ];
+    
+    const geoQuestions = [
+      { q: "What is the capital of France?", options: ["London", "Paris", "Berlin", "Madrid"], correct: 1 },
+      { q: "Which river is the longest?", options: ["Amazon", "Nile", "Yangtze", "Mississippi"], correct: 1 },
+      { q: "What is the largest country by area?", options: ["China", "USA", "Canada", "Russia"], correct: 3 },
+      { q: "Which continent has the most countries?", options: ["Asia", "Europe", "Africa", "South America"], correct: 2 },
+      { q: "What is the capital of Japan?", options: ["Seoul", "Beijing", "Tokyo", "Bangkok"], correct: 2 },
+      { q: "Which ocean is the largest?", options: ["Atlantic", "Indian", "Arctic", "Pacific"], correct: 3 },
+      { q: "What is the capital of Australia?", options: ["Sydney", "Melbourne", "Canberra", "Perth"], correct: 2 },
+      { q: "Which country has the most people?", options: ["USA", "India", "China", "Indonesia"], correct: 1 },
+    ];
+    
+    // DOM Elements
+    const selectScreen = document.getElementById('selectScreen');
+    const exerciseScreen = document.getElementById('exerciseScreen');
+    const quizScreen = document.getElementById('quizScreen');
+    const challengeCards = document.querySelectorAll('.challenge-card');
+    const continueBtn = document.getElementById('continueBtn');
     
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
@@ -133,16 +240,40 @@
     const fajrTimeBox = document.getElementById('fajrTimeBox');
     const fajrValue = document.getElementById('fajrValue');
     
-    // Get user location
+    const qNum = document.getElementById('qNum');
+    const qText = document.getElementById('qText');
+    const qOptions = document.getElementById('qOptions');
+    const quizMessage = document.getElementById('quizMessage');
+    const nextQBtn = document.getElementById('nextQBtn');
+    const retryQuizBtn = document.getElementById('retryQuizBtn');
+    
+    // Challenge Selection
+    challengeCards.forEach(card => {
+      card.addEventListener('click', () => {
+        challengeCards.forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedChallenge = card.dataset.challenge;
+        continueBtn.disabled = false;
+      });
+    });
+    
+    continueBtn.addEventListener('click', () => {
+      if (selectedChallenge === 'math' || selectedChallenge === 'geo') {
+        selectScreen.classList.remove('active');
+        quizScreen.classList.add('active');
+        startQuiz();
+      } else {
+        selectScreen.classList.remove('active');
+        exerciseScreen.classList.add('active');
+        targetReps = selectedChallenge === 'jumpingjack' ? 20 : 10;
+        countEl.parentElement.querySelector('span').textContent = `/ ${targetReps}`;
+      }
+    });
+    
+    // Location & Fajr
     locationBtn.addEventListener('click', () => {
       locationBtn.disabled = true;
       locationStatus.textContent = 'Getting location...';
-      
-      if (!navigator.geolocation) {
-        locationStatus.textContent = 'Geolocation not supported';
-        locationBtn.disabled = false;
-        return;
-      }
       
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -159,7 +290,6 @@
       );
     });
     
-    // Get accurate Fajr time from prayer times API
     async function getFajrFromAPI() {
       try {
         const today = new Date();
@@ -177,7 +307,6 @@
           fajrTime = new Date();
           fajrTime.setHours(fajrHours, fajrMins, 0, 0);
           
-          // If Fajr already passed, get tomorrow's
           const now = new Date();
           if (fajrTime < now) {
             const tomorrow = new Date(now);
@@ -201,29 +330,25 @@
           checkFajrAlarm();
         }
       } catch (e) {
-        locationStatus.textContent = 'API error, using calculation';
-        calculateFajrTime();
+        locationStatus.textContent = 'API error';
+        locationBtn.disabled = false;
       }
     }
     
     function checkFajrAlarm() {
       if (alarmTriggered || !fajrTime) return;
-      
       const now = new Date();
       const diff = fajrTime - now;
-      
       if (diff <= 0) {
-        // Fajr time! Start alarm
         startAlarm();
         alarmTriggered = true;
       }
     }
-    
     setInterval(checkFajrAlarm, 30000);
     
+    // Exercise Detection
     function playAlarm() {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      
       function playTone() {
         if (!alarmActive) return;
         const osc = audioCtx.createOscillator();
@@ -240,14 +365,12 @@
       }
       playTone();
     }
-    
     function stopAlarm() { alarmActive = false; }
     
     function initPose() {
       pose = new Pose({
         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/${file}`
       });
-      
       pose.setOptions({
         modelComplexity: 1,
         smoothLandmarks: true,
@@ -255,7 +378,6 @@
         minDetectionConfidence: 0.5,
         minTrackingConfidence: 0.5
       });
-      
       pose.onResults(onPoseResults);
     }
     
@@ -267,55 +389,59 @@
       if (results.poseLandmarks) {
         drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, {color: '#ffd700', lineWidth: 3});
         drawLandmarks(ctx, results.poseLandmarks, {color: '#ff6b6b', lineWidth: 2, radius: 4});
-        detectSquat(results.poseLandmarks);
+        
+        if (selectedChallenge === 'squat') detectSquat(results.poseLandmarks);
+        else if (selectedChallenge === 'jumpingjack') detectJumpingJack(results.poseLandmarks);
       }
     }
     
     function detectSquat(landmarks) {
       if (!alarmActive) return;
       
-      const leftHip = landmarks[23];
-      const leftKnee = landmarks[25];
-      const leftAnkle = landmarks[27];
-      const rightHip = landmarks[24];
-      const rightKnee = landmarks[26];
-      const rightAnkle = landmarks[28];
+      const leftHip = landmarks[23], leftKnee = landmarks[25], leftAnkle = landmarks[27];
+      const rightHip = landmarks[24], rightKnee = landmarks[26], rightAnkle = landmarks[28];
       
-      // Use whichever side is more visible
       let hip, knee, ankle;
-      const leftVis = (leftHip?.visibility || 0) + (leftKnee?.visibility || 0) + (leftAnkle?.visibility || 0);
-      const rightVis = (rightHip?.visibility || 0) + (rightKnee?.visibility || 0) + (rightAnkle?.visibility || 0);
+      const leftVis = (leftHip?.visibility||0) + (leftKnee?.visibility||0) + (leftAnkle?.visibility||0);
+      const rightVis = (rightHip?.visibility||0) + (rightKnee?.visibility||0) + (rightAnkle?.visibility||0);
       
-      if (leftVis >= rightVis) {
-        hip = leftHip; knee = leftKnee; ankle = leftAnkle;
-      } else {
-        hip = rightHip; knee = rightKnee; ankle = rightAnkle;
-      }
+      if (leftVis >= rightVis) { hip = leftHip; knee = leftKnee; ankle = leftAnkle; }
+      else { hip = rightHip; knee = rightKnee; ankle = rightAnkle; }
       
       if (!hip || !knee || !ankle) return;
       
-      const angle = calculateAngle(
-        {x: hip.x, y: hip.y},
-        {x: knee.x, y: knee.y},
-        {x: ankle.x, y: ankle.y}
-      );
+      const angle = calculateAngle({x: hip.x, y: hip.y}, {x: knee.x, y: knee.y}, {x: ankle.x, y: ankle.y});
       
-      // Squat: knee angle < 100 when down, > 160 when standing
-      if (angle < 100 && !inSitUp) {
-        inSitUp = true;
-        lastAngle = angle;
-      } else if (angle > 160 && inSitUp && lastAngle < 100) {
-        if (!sitUpComplete) {
-          sitUpCount++;
-          updateCount();
-          sitUpComplete = true;
-          if (sitUpCount >= 10) alarmSolved();
-        }
-      } else if (angle > 170) {
-        sitUpComplete = false;
+      if (angle < 100 && !inRep) { inRep = true; lastAngle = angle; }
+      else if (angle > 160 && inRep && lastAngle < 100 && !repComplete) {
+        repCount++; updateReps(); repComplete = true;
+        if (repCount >= targetReps) alarmSolved();
       }
-      
+      else if (angle > 170) repComplete = false;
       if (angle > 120) lastAngle = angle;
+    }
+    
+    function detectJumpingJack(landmarks) {
+      if (!alarmActive) return;
+      
+      const leftWrist = landmarks[15], rightWrist = landmarks[16];
+      const leftAnkle = landmarks[27], rightAnkle = landmarks[28];
+      
+      if (!leftWrist || !rightWrist || !leftAnkle || !rightAnkle) return;
+      
+      // Arms up = wrists above head level
+      // Legs apart = ankles wider than hips
+      const armsUp = leftWrist.y < 0.3 && rightWrist.y < 0.3;
+      const legsApart = Math.abs(leftAnkle.x - rightAnkle.x) > 0.3;
+      
+      if (armsUp && legsApart && !inRep) {
+        inRep = true;
+      } else if (!armsUp && !legsApart && inRep && !repComplete) {
+        repCount++; updateReps(); repComplete = true;
+        if (repCount >= targetReps) alarmSolved();
+      } else if (armsUp && legsApart) {
+        repComplete = false;
+      }
     }
     
     function calculateAngle(a, b, c) {
@@ -324,10 +450,10 @@
       return angle > 180 ? 360 - angle : angle;
     }
     
-    function updateCount() {
-      countEl.textContent = sitUpCount;
-      progressEl.style.width = (sitUpCount * 10) + '%';
-      messageEl.textContent = `${10 - sitUpCount} more to go!`;
+    function updateReps() {
+      countEl.textContent = repCount;
+      progressEl.style.width = (repCount / targetReps * 100) + '%';
+      messageEl.textContent = `${targetReps - repCount} more to go!`;
     }
     
     function alarmSolved() {
@@ -342,14 +468,12 @@
     
     async function startAlarm() {
       alarmActive = true;
-      sitUpCount = 0;
-      inSitUp = false;
-      sitUpComplete = false;
-      lastAngle = null;
+      repCount = 0;
+      inRep = false; repComplete = false; lastAngle = null;
       
       countEl.textContent = '0';
       progressEl.style.width = '0%';
-      messageEl.textContent = '🔔 ALARM! Do 10 squats!';
+      messageEl.textContent = `🔔 ALARM! Do ${targetReps} ${selectedChallenge}!`;
       messageEl.className = 'message alarm';
       
       testBtn.classList.add('hidden');
@@ -358,15 +482,10 @@
       
       try {
         initPose();
-        
         camera = new Camera(video, {
-          onFrame: async () => {
-            if (pose) await pose.send({image: video});
-          },
-          width: 480,
-          height: 360
+          onFrame: async () => { if (pose) await pose.send({image: video}); },
+          width: 480, height: 360
         });
-        
         await camera.start();
         playAlarm();
       } catch (e) {
@@ -386,6 +505,77 @@
     
     testBtn.addEventListener('click', startAlarm);
     stopBtn.addEventListener('click', stopAlarmHandler);
+    
+    // Quiz Logic
+    function startQuiz() {
+      currentQuestion = 0;
+      quizScore = 0;
+      showQuestion();
+    }
+    
+    function showQuestion() {
+      const questions = selectedChallenge === 'math' ? mathQuestions : geoQuestions;
+      const q = questions[currentQuestion];
+      
+      qNum.textContent = currentQuestion + 1;
+      qText.textContent = q.q;
+      qOptions.innerHTML = '';
+      quizMessage.textContent = '';
+      quizAnswered = false;
+      nextQBtn.classList.add('hidden');
+      
+      q.options.forEach((opt, i) => {
+        const btn = document.createElement('div');
+        btn.className = 'quiz-option';
+        btn.textContent = opt;
+        btn.onclick = () => selectAnswer(i, q.correct);
+        qOptions.appendChild(btn);
+      });
+    }
+    
+    function selectAnswer(selected, correct) {
+      if (quizAnswered) return;
+      quizAnswered = true;
+      
+      const opts = qOptions.querySelectorAll('.quiz-option');
+      opts[correct].classList.add('correct');
+      
+      if (selected === correct) {
+        quizScore++;
+        quizMessage.textContent = '✓ Correct!';
+        quizMessage.className = 'message success';
+      } else {
+        opts[selected].classList.add('wrong');
+        quizMessage.textContent = `✗ Wrong! Answer: ${opts[correct].textContent}`;
+        quizMessage.className = 'message alarm';
+      }
+      
+      if (currentQuestion < 4) {
+        nextQBtn.classList.remove('hidden');
+      } else {
+        // Quiz complete
+        setTimeout(() => {
+          const pct = quizScore * 20;
+          if (pct >= 80) {
+            quizMessage.textContent = `🎉 Great! ${quizScore}/5 - Alarm dismissed!`;
+            quizMessage.className = 'message success';
+          } else {
+            quizMessage.textContent = `${quizScore}/5 - Try again!`;
+            retryQuizBtn.classList.remove('hidden');
+          }
+        }, 1000);
+      }
+    }
+    
+    nextQBtn.onclick = () => {
+      currentQuestion++;
+      showQuestion();
+    };
+    
+    retryQuizBtn.onclick = () => {
+      retryQuizBtn.classList.add('hidden');
+      startQuiz();
+    };
   </script>
 </body>
 </html>
