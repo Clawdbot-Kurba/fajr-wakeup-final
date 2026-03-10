@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Fajr Wake-Up Challenge</title>
+  <title>Fajr Wake-Up</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -14,9 +14,14 @@
       padding: 15px;
       touch-action: manipulation;
     }
-    .container { max-width: 500px; margin: 0 auto; text-align: center; }
-    h1 { font-size: 1.5rem; margin-bottom: 8px; color: #ffd700; }
-    .subtitle { font-size: 0.9rem; color: #aaa; margin-bottom: 15px; }
+    .container { max-width: 500px; margin: 0 auto; }
+    
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .back-btn { background: none; border: none; color: #ffd700; font-size: 1.5rem; cursor: pointer; padding: 5px; }
+    .back-btn:disabled { opacity: 0; }
+    
+    h1 { font-size: 1.5rem; color: #ffd700; text-align: center; }
+    .subtitle { font-size: 0.9rem; color: #aaa; text-align: center; margin-bottom: 20px; }
     
     .screen { display: none; }
     .screen.active { display: block; }
@@ -30,85 +35,96 @@
       cursor: pointer;
       transition: transform 0.2s, background 0.2s;
       border: 2px solid transparent;
+      text-align: center;
     }
     .challenge-card:active { transform: scale(0.96); }
     .challenge-card.selected { border-color: #ffd700; background: rgba(255,215,0,0.15); }
-    .challenge-card-icon { font-size: 2rem; margin-bottom: 8px; }
+    .challenge-card-icon { font-size: 2.5rem; margin-bottom: 8px; }
     .challenge-card-title { font-weight: 600; margin-bottom: 4px; }
     .challenge-card-desc { font-size: 0.75rem; color: #aaa; }
     
-    /* Exercise Screen */
-    .location-btn { background: #3498db; color: #fff; padding: 10px 20px; border: none; border-radius: 25px; font-size: 0.9rem; margin-bottom: 15px; cursor: pointer; }
-    .location-btn:disabled { opacity: 0.6; }
-    .fajr-time { background: rgba(255,215,0,0.15); padding: 10px 20px; border-radius: 25px; display: inline-block; margin-bottom: 15px; }
-    .fajr-time-label { font-size: 0.8rem; color: #aaa; }
-    .fajr-time-value { font-size: 1.8rem; font-weight: bold; color: #ffd700; }
-    .counter { font-size: 3.5rem; font-weight: bold; color: #ffd700; margin: 15px 0; }
-    .counter span { font-size: 1.2rem; color: #aaa; }
-    .progress { width: 100%; height: 16px; background: rgba(255,255,255,0.2); border-radius: 8px; overflow: hidden; margin: 15px 0; }
-    .progress-fill { height: 100%; background: linear-gradient(90deg, #ffd700, #ff6b6b); width: 0%; transition: width 0.3s; }
-    .video-wrap { display: none; margin: 15px 0; border-radius: 12px; overflow: hidden; }
-    .video-wrap.active { display: block; }
-    #video { width: 100%; max-width: 350px; transform: scaleX(-1); border-radius: 12px; }
-    #canvas { position: absolute; top: 0; left: 0; width: 100%; max-width: 350px; transform: scaleX(-1); }
-    .video-container { position: relative; display: inline-block; }
-    
-    /* Quiz Screen */
-    .quiz-question { font-size: 1.3rem; margin: 20px 0; padding: 20px; background: rgba(255,255,255,0.1); border-radius: 12px; }
-    .quiz-options { display: grid; gap: 10px; margin: 20px 0; }
-    .quiz-option {
-      padding: 15px;
-      background: rgba(255,255,255,0.1);
-      border: 2px solid transparent;
-      border-radius: 10px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .quiz-option:active { transform: scale(0.98); }
-    .quiz-option.correct { background: rgba(46, 213, 115, 0.3); border-color: #2ed573; }
-    .quiz-option.wrong { background: rgba(255, 107, 107, 0.3); border-color: #ff6b6b; }
-    .quiz-score { font-size: 1.1rem; margin: 15px 0; }
-    
+    .btn-row { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
     .btn {
       padding: 14px 28px;
       font-size: 1rem;
       border: none;
       border-radius: 50px;
       cursor: pointer;
-      margin: 8px;
       transition: transform 0.15s, opacity 0.2s;
       -webkit-tap-highlight-color: transparent;
     }
     .btn:active { transform: scale(0.96); }
     .btn-primary { background: linear-gradient(135deg, #ffd700, #ff9500); color: #000; font-weight: 600; }
+    .btn-secondary { background: rgba(255,255,255,0.15); color: #fff; }
     .btn-stop { background: linear-gradient(135deg, #ff6b6b, #ff4757); color: #fff; font-weight: 600; }
-    .btn-test { background: linear-gradient(135deg, #ff4757, #c0392b); color: #fff; font-weight: 600; }
+    .btn:disabled { opacity: 0.5; }
     
-    .message { font-size: 1.1rem; margin: 15px 0; min-height: 25px; }
+    /* Exercise Screen */
+    .location-section { text-align: center; margin-bottom: 20px; }
+    .location-btn { background: #3498db; color: #fff; padding: 10px 20px; border: none; border-radius: 25px; font-size: 0.9rem; cursor: pointer; }
+    .location-btn:disabled { opacity: 0.6; }
+    .location-status { font-size: 0.8rem; color: #888; margin-top: 8px; }
+    
+    .fajr-display { background: rgba(255,215,0,0.15); padding: 15px 25px; border-radius: 20px; display: inline-block; margin-bottom: 20px; text-align: center; }
+    .fajr-label { font-size: 0.8rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+    .fajr-time { font-size: 2rem; font-weight: bold; color: #ffd700; }
+    .fajr-countdown { font-size: 0.85rem; color: #888; margin-top: 5px; }
+    
+    .counter-display { text-align: center; margin: 20px 0; }
+    .counter { font-size: 4rem; font-weight: bold; color: #ffd700; }
+    .counter span { font-size: 1.5rem; color: #aaa; }
+    .progress { width: 100%; height: 12px; background: rgba(255,255,255,0.2); border-radius: 6px; overflow: hidden; margin: 15px 0; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #ffd700, #ff6b6b); width: 0%; transition: width 0.3s; }
+    
+    .video-container { position: relative; display: inline-block; margin: 15px 0; border-radius: 12px; overflow: hidden; }
+    .video-container video { width: 100%; max-width: 350px; transform: scaleX(-1); border-radius: 12px; }
+    .video-container canvas { position: absolute; top: 0; left: 0; width: 100%; max-width: 350px; transform: scaleX(-1); }
+    
+    /* Quiz Screen */
+    .quiz-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .quiz-progress { font-size: 1rem; color: #aaa; }
+    .quiz-question { font-size: 1.3rem; padding: 25px; background: rgba(255,255,255,0.1); border-radius: 15px; margin-bottom: 20px; }
+    .quiz-options { display: grid; gap: 10px; }
+    .quiz-option {
+      padding: 16px;
+      background: rgba(255,255,255,0.1);
+      border: 2px solid transparent;
+      border-radius: 12px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .quiz-option:active { transform: scale(0.98); }
+    .quiz-option.correct { background: rgba(46, 213, 115, 0.3); border-color: #2ed573; }
+    .quiz-option.wrong { background: rgba(255, 107, 107, 0.3); border-color: #ff6b6b; }
+    .quiz-option.disabled { pointer-events: none; }
+    
+    .message { text-align: center; font-size: 1.1rem; margin: 15px 0; min-height: 25px; }
     .message.alarm { color: #ff6b6b; animation: pulse 0.5s infinite; }
     .message.success { color: #2ed573; font-weight: 600; }
     .message.waiting { color: #ffd700; }
-    .message.info { color: #3498db; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     
-    .location-status { font-size: 0.8rem; color: #888; margin-top: 5px; }
     .hidden { display: none !important; }
     
     @media (max-width: 400px) {
       h1 { font-size: 1.3rem; }
-      .counter { font-size: 2.8rem; }
+      .counter { font-size: 3rem; }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🌅 Fajr Wake-Up</h1>
-    <p class="subtitle">Choose your challenge to dismiss the alarm</p>
+    <div class="header">
+      <button class="back-btn" id="backBtn">←</button>
+      <h1>🌅 Fajr Wake-Up</h1>
+      <div style="width: 30px;"></div>
+    </div>
     
     <!-- Challenge Selection Screen -->
     <div class="screen active" id="selectScreen">
-      <p style="margin-bottom: 15px; color: #aaa;">What challenge will wake you up?</p>
+      <p class="subtitle">Choose a challenge to dismiss the alarm</p>
       
       <div class="challenge-grid">
         <div class="challenge-card" data-challenge="squat">
@@ -119,12 +135,12 @@
         <div class="challenge-card" data-challenge="jumpingjack">
           <div class="challenge-card-icon">⭐</div>
           <div class="challenge-card-title">20 Jumping Jacks</div>
-          <div class="challenge-card-desc">Do 20 jumping jacks</div>
+          <div class="challenge-card-desc">Full body workout</div>
         </div>
         <div class="challenge-card" data-challenge="math">
           <div class="challenge-card-icon">🔢</div>
           <div class="challenge-card-title">Math Quiz</div>
-          <div class="challenge-card-desc">5 quick math problems</div>
+          <div class="challenge-card-desc">5 math problems</div>
         </div>
         <div class="challenge-card" data-challenge="geo">
           <div class="challenge-card-icon">🌍</div>
@@ -133,52 +149,66 @@
         </div>
       </div>
       
-      <button class="btn btn-primary" id="continueBtn" disabled>Continue →</button>
+      <button class="btn btn-primary" id="startChallengeBtn" disabled>Start Challenge →</button>
     </div>
     
-    <!-- Exercise Setup Screen -->
+    <!-- Exercise Screen -->
     <div class="screen" id="exerciseScreen">
-      <button class="location-btn" id="locationBtn">📍 Get My Location</button>
-      <p class="location-status" id="locationStatus"></p>
-      
-      <div class="fajr-time" id="fajrTimeBox" style="display:none">
-        <div class="fajr-time-label">FAJR</div>
-        <div class="fajr-time-value" id="fajrValue">--:--</div>
+      <div class="location-section">
+        <button class="location-btn" id="locationBtn">📍 Set Location for Fajr Time</button>
+        <p class="location-status" id="locationStatus"></p>
       </div>
       
-      <div class="counter"><span id="count">0</span> <span>/ 10</span></div>
-      <div class="progress"><div class="progress-fill" id="progress"></div></div>
-      <p class="message" id="message">Click "Test Alarm" or wait for Fajr</p>
+      <div class="fajr-display" id="fajrDisplay">
+        <div class="fajr-label">Fajr Time</div>
+        <div class="fajr-time" id="fajrValue">--:--</div>
+        <div class="fajr-countdown" id="fajrCountdown"></div>
+      </div>
+      
+      <p class="message" id="message">Set location or click Test to start</p>
+      
+      <div class="counter-display">
+        <div class="counter"><span id="count">0</span><span> / <span id="target">10</span></span></div>
+        <div class="progress"><div class="progress-fill" id="progress"></div></div>
+      </div>
       
       <div class="video-container" id="videoContainer">
         <video id="video" playsinline></video>
         <canvas id="canvas"></canvas>
       </div>
       
-      <div>
-        <button class="btn btn-test" id="testBtn">🔔 Test Alarm</button>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="testBtn">🔔 Test Alarm</button>
         <button class="btn btn-stop hidden" id="stopBtn">⏹ Stop</button>
       </div>
     </div>
     
     <!-- Quiz Screen -->
     <div class="screen" id="quizScreen">
-      <div class="quiz-score">Question <span id="qNum">1</span>/5</div>
+      <div class="quiz-header">
+        <span class="quiz-progress">Question <span id="qNum">1</span>/5</span>
+        <span class="quiz-progress">Score: <span id="qScore">0</span>/5</span>
+      </div>
+      
       <div class="quiz-question" id="qText">Loading...</div>
       <div class="quiz-options" id="qOptions"></div>
+      
       <p class="message" id="quizMessage"></p>
-      <button class="btn btn-primary hidden" id="nextQBtn">Next Question →</button>
-      <button class="btn btn-primary hidden" id="retryQuizBtn">Try Again</button>
+      
+      <div class="btn-row">
+        <button class="btn btn-primary hidden" id="nextQBtn">Next →</button>
+        <button class="btn btn-primary hidden" id="restartQuizBtn">Try Again</button>
+      </div>
     </div>
   </div>
 
-  <!-- MediaPipe for exercises -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js"></script>
 
   <script>
     // State
+    let currentScreen = 'select';
     let selectedChallenge = null;
     let alarmActive = false;
     let repCount = 0;
@@ -192,7 +222,7 @@
     let fajrTime = null;
     let alarmTriggered = false;
     
-    // Quiz state
+    // Quiz
     let currentQuestion = 0;
     let quizScore = 0;
     let quizAnswered = false;
@@ -220,16 +250,21 @@
     ];
     
     // DOM Elements
-    const selectScreen = document.getElementById('selectScreen');
-    const exerciseScreen = document.getElementById('exerciseScreen');
-    const quizScreen = document.getElementById('quizScreen');
+    const screens = {
+      select: document.getElementById('selectScreen'),
+      exercise: document.getElementById('exerciseScreen'),
+      quiz: document.getElementById('quizScreen')
+    };
+    
+    const backBtn = document.getElementById('backBtn');
     const challengeCards = document.querySelectorAll('.challenge-card');
-    const continueBtn = document.getElementById('continueBtn');
+    const startChallengeBtn = document.getElementById('startChallengeBtn');
     
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const countEl = document.getElementById('count');
+    const targetEl = document.getElementById('target');
     const progressEl = document.getElementById('progress');
     const messageEl = document.getElementById('message');
     const testBtn = document.getElementById('testBtn');
@@ -237,15 +272,38 @@
     const videoContainer = document.getElementById('videoContainer');
     const locationBtn = document.getElementById('locationBtn');
     const locationStatus = document.getElementById('locationStatus');
-    const fajrTimeBox = document.getElementById('fajrTimeBox');
     const fajrValue = document.getElementById('fajrValue');
+    const fajrDisplay = document.getElementById('fajrDisplay');
+    const fajrCountdown = document.getElementById('fajrCountdown');
     
     const qNum = document.getElementById('qNum');
+    const qScore = document.getElementById('qScore');
     const qText = document.getElementById('qText');
     const qOptions = document.getElementById('qOptions');
     const quizMessage = document.getElementById('quizMessage');
     const nextQBtn = document.getElementById('nextQBtn');
-    const retryQuizBtn = document.getElementById('retryQuizBtn');
+    const restartQuizBtn = document.getElementById('restartQuizBtn');
+    
+    // Navigation
+    function showScreen(screen) {
+      Object.values(screens).forEach(s => s.classList.remove('active'));
+      screens[screen].classList.add('active');
+      currentScreen = screen;
+      updateBackBtn();
+    }
+    
+    function updateBackBtn() {
+      backBtn.disabled = currentScreen === 'select';
+    }
+    
+    backBtn.addEventListener('click', () => {
+      if (currentScreen === 'exercise') {
+        stopAlarm();
+        showScreen('select');
+      } else if (currentScreen === 'quiz') {
+        showScreen('select');
+      }
+    });
     
     // Challenge Selection
     challengeCards.forEach(card => {
@@ -253,20 +311,18 @@
         challengeCards.forEach(c => c.classList.remove('selected'));
         card.classList.add('selected');
         selectedChallenge = card.dataset.challenge;
-        continueBtn.disabled = false;
+        startChallengeBtn.disabled = false;
       });
     });
     
-    continueBtn.addEventListener('click', () => {
+    startChallengeBtn.addEventListener('click', () => {
       if (selectedChallenge === 'math' || selectedChallenge === 'geo') {
-        selectScreen.classList.remove('active');
-        quizScreen.classList.add('active');
+        showScreen('quiz');
         startQuiz();
       } else {
-        selectScreen.classList.remove('active');
-        exerciseScreen.classList.add('active');
+        showScreen('exercise');
         targetReps = selectedChallenge === 'jumpingjack' ? 20 : 10;
-        countEl.parentElement.querySelector('span').textContent = `/ ${targetReps}`;
+        targetEl.textContent = targetReps;
       }
     });
     
@@ -279,7 +335,7 @@
         (pos) => {
           userLat = pos.coords.latitude;
           userLon = pos.coords.longitude;
-          locationStatus.textContent = `📍 ${userLat.toFixed(2)}, ${userLon.toFixed(2)}`;
+          locationStatus.textContent = `📍 ${userLat.toFixed(2)}°, ${userLon.toFixed(2)}°`;
           getFajrFromAPI();
         },
         (err) => {
@@ -324,9 +380,10 @@
           }
           
           fajrValue.textContent = fajrTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          fajrTimeBox.style.display = 'inline-block';
           locationStatus.textContent = '✓ Fajr time loaded';
           
+          updateCountdown();
+          setInterval(updateCountdown, 60000);
           checkFajrAlarm();
         }
       } catch (e) {
@@ -335,11 +392,24 @@
       }
     }
     
+    function updateCountdown() {
+      if (!fajrTime) return;
+      const now = new Date();
+      const diff = fajrTime - now;
+      
+      if (diff > 0) {
+        const hours = Math.floor(diff / 3600000);
+        const mins = Math.floor((diff % 3600000) / 60000);
+        fajrCountdown.textContent = `in ${hours}h ${mins}m`;
+      } else {
+        fajrCountdown.textContent = 'Time!';
+      }
+    }
+    
     function checkFajrAlarm() {
       if (alarmTriggered || !fajrTime) return;
       const now = new Date();
-      const diff = fajrTime - now;
-      if (diff <= 0) {
+      if (fajrTime <= now) {
         startAlarm();
         alarmTriggered = true;
       }
@@ -365,7 +435,10 @@
       }
       playTone();
     }
-    function stopAlarm() { alarmActive = false; }
+    function stopAlarm() { 
+      alarmActive = false; 
+      if (camera) { camera.stop(); camera = null; }
+    }
     
     function initPose() {
       pose = new Pose({
@@ -429,8 +502,6 @@
       
       if (!leftWrist || !rightWrist || !leftAnkle || !rightAnkle) return;
       
-      // Arms up = wrists above head level
-      // Legs apart = ankles wider than hips
       const armsUp = leftWrist.y < 0.3 && rightWrist.y < 0.3;
       const legsApart = Math.abs(leftAnkle.x - rightAnkle.x) > 0.3;
       
@@ -460,8 +531,7 @@
       stopAlarm();
       messageEl.textContent = '🎉 Done! Good morning!';
       messageEl.className = 'message success';
-      if (camera) { camera.stop(); camera = null; }
-      videoContainer.classList.remove('active');
+      videoContainer.style.display = 'none';
       stopBtn.classList.add('hidden');
       testBtn.classList.remove('hidden');
     }
@@ -473,12 +543,12 @@
       
       countEl.textContent = '0';
       progressEl.style.width = '0%';
-      messageEl.textContent = `🔔 ALARM! Do ${targetReps} ${selectedChallenge}!`;
+      messageEl.textContent = `🔔 ALARM! Do ${targetReps} ${selectedChallenge === 'jumpingjack' ? 'jumping jacks' : 'squats'}!`;
       messageEl.className = 'message alarm';
       
       testBtn.classList.add('hidden');
       stopBtn.classList.remove('hidden');
-      videoContainer.classList.add('active');
+      videoContainer.style.display = 'inline-block';
       
       try {
         initPose();
@@ -495,10 +565,9 @@
     
     function stopAlarmHandler() {
       stopAlarm();
-      messageEl.textContent = 'Alarm stopped. Click "Test Alarm" to try again.';
+      messageEl.textContent = 'Alarm stopped. Click Test to try again.';
       messageEl.className = 'message waiting';
-      if (camera) { camera.stop(); camera = null; }
-      videoContainer.classList.remove('active');
+      videoContainer.style.display = 'none';
       stopBtn.classList.add('hidden');
       testBtn.classList.remove('hidden');
     }
@@ -507,14 +576,21 @@
     stopBtn.addEventListener('click', stopAlarmHandler);
     
     // Quiz Logic
+    function shuffle(array) {
+      return array.sort(() => Math.random() - 0.5);
+    }
+    
     function startQuiz() {
       currentQuestion = 0;
       quizScore = 0;
+      qScore.textContent = '0';
       showQuestion();
     }
     
     function showQuestion() {
-      const questions = selectedChallenge === 'math' ? mathQuestions : geoQuestions;
+      const questions = shuffle([...mathQuestions]).slice(0, 5);
+      window.currentQuizQuestions = questions;
+      
       const q = questions[currentQuestion];
       
       qNum.textContent = currentQuestion + 1;
@@ -524,44 +600,45 @@
       quizAnswered = false;
       nextQBtn.classList.add('hidden');
       
-      q.options.forEach((opt, i) => {
+      const shuffledOpts = shuffle([...q.options.map((opt, i) => ({text: opt, correct: i === q.correct}))]);
+      
+      shuffledOpts.forEach((opt) => {
         const btn = document.createElement('div');
         btn.className = 'quiz-option';
-        btn.textContent = opt;
-        btn.onclick = () => selectAnswer(i, q.correct);
+        btn.textContent = opt.text;
+        btn.dataset.correct = opt.correct;
+        btn.onclick = () => selectAnswer(opt.correct);
         qOptions.appendChild(btn);
       });
     }
     
-    function selectAnswer(selected, correct) {
+    function selectAnswer(isCorrect) {
       if (quizAnswered) return;
       quizAnswered = true;
       
       const opts = qOptions.querySelectorAll('.quiz-option');
-      opts[correct].classList.add('correct');
+      opts.forEach(o => o.classList.add('disabled'));
       
-      if (selected === correct) {
+      if (isCorrect) {
         quizScore++;
+        qScore.textContent = quizScore;
         quizMessage.textContent = '✓ Correct!';
         quizMessage.className = 'message success';
       } else {
-        opts[selected].classList.add('wrong');
-        quizMessage.textContent = `✗ Wrong! Answer: ${opts[correct].textContent}`;
+        quizMessage.textContent = '✗ Wrong!';
         quizMessage.className = 'message alarm';
       }
       
       if (currentQuestion < 4) {
         nextQBtn.classList.remove('hidden');
       } else {
-        // Quiz complete
         setTimeout(() => {
-          const pct = quizScore * 20;
-          if (pct >= 80) {
+          if (quizScore >= 4) {
             quizMessage.textContent = `🎉 Great! ${quizScore}/5 - Alarm dismissed!`;
             quizMessage.className = 'message success';
           } else {
-            quizMessage.textContent = `${quizScore}/5 - Try again!`;
-            retryQuizBtn.classList.remove('hidden');
+            quizMessage.textContent = `${quizScore}/5 - Need 4+ to pass`;
+            restartQuizBtn.classList.remove('hidden');
           }
         }, 1000);
       }
@@ -572,8 +649,8 @@
       showQuestion();
     };
     
-    retryQuizBtn.onclick = () => {
-      retryQuizBtn.classList.add('hidden');
+    restartQuizBtn.onclick = () => {
+      restartQuizBtn.classList.add('hidden');
       startQuiz();
     };
   </script>
