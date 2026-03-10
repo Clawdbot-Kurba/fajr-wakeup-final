@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fajr Wake-Up - Sit-Up Challenge</title>
+  <title>Fajr Wake-Up - Squat Challenge</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -50,7 +50,7 @@
 <body>
   <div class="container">
     <h1>🌅 Fajr Wake-Up Challenge</h1>
-    <p>Complete 10 sit-ups to silence the alarm!</p>
+    <p>Complete 10 squats to silence the alarm!</p>
     
     <div class="counter"><span id="count">0</span> / 10</div>
     <div class="progress"><div class="progress-fill" id="progress"></div></div>
@@ -71,8 +71,8 @@
       <ul>
         <li>Click "Test Alarm" to start</li>
         <li>Allow camera access</li>
-        <li>Lie on your back, get in frame</li>
-        <li>Do 10 sit-ups - camera tracks your pose</li>
+        <li>Stand in frame (full body visible)</li>
+        <li>Do 10 squats - camera tracks your pose</li>
         <li>Alarm stops when you hit 10!</li>
       </ul>
     </div>
@@ -163,29 +163,31 @@
     function detectSitUp(landmarks) {
       if (!alarmActive) return;
       
-      const leftShoulder = landmarks[11];
+      // Squat detection: hip-knee-ankle angle
       const leftHip = landmarks[23];
       const leftKnee = landmarks[25];
+      const leftAnkle = landmarks[27];
       
-      if (!leftShoulder || !leftHip || !leftKnee) return;
+      if (!leftHip || !leftKnee || !leftAnkle) return;
       
-      const shoulder = {x: leftShoulder.x, y: leftShoulder.y};
       const hip = {x: leftHip.x, y: leftHip.y};
       const knee = {x: leftKnee.x, y: leftKnee.y};
+      const ankle = {x: leftAnkle.x, y: leftAnkle.y};
       
-      const angle = calculateAngle(shoulder, hip, knee);
+      const angle = calculateAngle(hip, knee, ankle);
       
-      if (angle < 110 && !inSitUp) {
+      // Squat: knee angle < 100 when down, > 160 when standing
+      if (angle < 100 && !inSitUp) {
         inSitUp = true;
         lastAngle = angle;
-      } else if (angle > 150 && inSitUp && lastAngle < 110) {
+      } else if (angle > 160 && inSitUp && lastAngle < 100) {
         if (!sitUpComplete) {
           sitUpCount++;
           updateCount();
           sitUpComplete = true;
           if (sitUpCount >= 10) alarmSolved();
         }
-      } else if (angle > 160) {
+      } else if (angle > 170) {
         sitUpComplete = false;
       }
       
@@ -224,7 +226,7 @@
       
       countEl.textContent = '0';
       progressEl.style.width = '0%';
-      messageEl.textContent = '🔔 ALARM! Do 10 sit-ups!';
+      messageEl.textContent = '🔔 ALARM! Do 10 squats!';
       messageEl.className = 'message alarm';
       
       testBtn.classList.add('hidden');
