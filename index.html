@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Fajr Wake-Up - Squat Challenge</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -11,50 +11,76 @@
       background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 50%, #415a77 100%);
       min-height: 100vh;
       color: #fff;
-      padding: 20px;
+      padding: 15px;
+      touch-action: manipulation;
     }
-    .container { max-width: 600px; margin: 0 auto; text-align: center; }
-    h1 { font-size: 2rem; margin-bottom: 10px; color: #ffd700; }
-    .counter { font-size: 4rem; font-weight: bold; color: #ffd700; margin: 20px 0; }
-    .progress { width: 100%; height: 20px; background: rgba(255,255,255,0.2); border-radius: 10px; overflow: hidden; margin: 20px 0; }
+    .container { max-width: 500px; margin: 0 auto; text-align: center; }
+    h1 { font-size: 1.5rem; margin-bottom: 8px; color: #ffd700; }
+    .subtitle { font-size: 0.9rem; color: #aaa; margin-bottom: 15px; }
+    .location-btn { background: #3498db; color: #fff; padding: 8px 16px; border: none; border-radius: 20px; font-size: 0.85rem; margin-bottom: 15px; cursor: pointer; }
+    .location-btn:disabled { opacity: 0.6; }
+    .fajr-time { background: rgba(255,215,0,0.15); padding: 10px 20px; border-radius: 25px; display: inline-block; margin-bottom: 15px; }
+    .fajr-time-label { font-size: 0.8rem; color: #aaa; }
+    .fajr-time-value { font-size: 1.8rem; font-weight: bold; color: #ffd700; }
+    .counter { font-size: 3.5rem; font-weight: bold; color: #ffd700; margin: 15px 0; }
+    .counter span { font-size: 1.2rem; color: #aaa; }
+    .progress { width: 100%; height: 16px; background: rgba(255,255,255,0.2); border-radius: 8px; overflow: hidden; margin: 15px 0; }
     .progress-fill { height: 100%; background: linear-gradient(90deg, #ffd700, #ff6b6b); width: 0%; transition: width 0.3s; }
-    .video-wrap { display: none; margin: 20px 0; border-radius: 15px; overflow: hidden; }
+    .video-wrap { display: none; margin: 15px 0; border-radius: 12px; overflow: hidden; }
     .video-wrap.active { display: block; }
-    #video { width: 100%; max-width: 400px; transform: scaleX(-1); }
-    #canvas { position: absolute; top: 0; left: 0; width: 100%; max-width: 400px; transform: scaleX(-1); }
+    #video { width: 100%; max-width: 350px; transform: scaleX(-1); border-radius: 12px; }
+    #canvas { position: absolute; top: 0; left: 0; width: 100%; max-width: 350px; transform: scaleX(-1); }
     .video-container { position: relative; display: inline-block; }
     .btn {
-      padding: 15px 30px;
-      font-size: 1.1rem;
+      padding: 14px 28px;
+      font-size: 1rem;
       border: none;
       border-radius: 50px;
       cursor: pointer;
-      margin: 10px;
-      transition: transform 0.2s;
+      margin: 8px;
+      transition: transform 0.15s, opacity 0.2s;
+      -webkit-tap-highlight-color: transparent;
     }
-    .btn:active { transform: scale(0.95); }
-    .btn-start { background: linear-gradient(135deg, #ffd700, #ff9500); color: #000; }
-    .btn-stop { background: linear-gradient(135deg, #ff6b6b, #ff4757); color: #fff; }
-    .btn-test { background: linear-gradient(135deg, #ff4757, #c0392b); color: #fff; }
-    .message { font-size: 1.2rem; margin: 20px 0; min-height: 30px; }
+    .btn:active { transform: scale(0.96); }
+    .btn-start { background: linear-gradient(135deg, #ffd700, #ff9500); color: #000; font-weight: 600; }
+    .btn-stop { background: linear-gradient(135deg, #ff6b6b, #ff4757); color: #fff; font-weight: 600; }
+    .btn-test { background: linear-gradient(135deg, #ff4757, #c0392b); color: #fff; font-weight: 600; }
+    .message { font-size: 1.1rem; margin: 15px 0; min-height: 25px; }
     .message.alarm { color: #ff6b6b; animation: pulse 0.5s infinite; }
-    .message.success { color: #2ed573; }
+    .message.success { color: #2ed573; font-weight: 600; }
     .message.waiting { color: #ffd700; }
+    .message.info { color: #3498db; font-size: 0.9rem; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-    .instructions { background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; margin-top: 30px; text-align: left; }
-    .instructions h3 { color: #ffd700; margin-bottom: 10px; }
-    .instructions li { padding: 5px 0; }
+    .instructions { background: rgba(255,255,255,0.08); border-radius: 12px; padding: 15px; margin-top: 20px; text-align: left; }
+    .instructions h3 { color: #ffd700; margin-bottom: 8px; font-size: 1rem; }
+    .instructions li { padding: 4px 0; font-size: 0.85rem; color: #ccc; }
     .hidden { display: none !important; }
+    .location-status { font-size: 0.8rem; color: #888; margin-top: 5px; }
+    
+    @media (max-width: 400px) {
+      h1 { font-size: 1.3rem; }
+      .counter { font-size: 2.8rem; }
+      .btn { padding: 12px 24px; font-size: 0.95rem; }
+      #video, #canvas { max-width: 100%; }
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🌅 Fajr Wake-Up Challenge</h1>
-    <p>Complete 10 squats to silence the alarm!</p>
+    <h1>🌅 Fajr Wake-Up</h1>
+    <p class="subtitle">Complete 10 squats to silence the alarm!</p>
     
-    <div class="counter"><span id="count">0</span> / 10</div>
+    <button class="location-btn" id="locationBtn">📍 Get My Location</button>
+    <p class="location-status" id="locationStatus"></p>
+    
+    <div class="fajr-time" id="fajrTimeBox" style="display:none">
+      <div class="fajr-time-label">FAJR</div>
+      <div class="fajr-time-value" id="fajrValue">--:--</div>
+    </div>
+    
+    <div class="counter"><span id="count">0</span> <span>/ 10</span></div>
     <div class="progress"><div class="progress-fill" id="progress"></div></div>
-    <p class="message" id="message">Click "Test Alarm" to try it now</p>
+    <p class="message" id="message">Click "Test Alarm" or wait for Fajr</p>
     
     <div class="video-container" id="videoContainer">
       <video id="video" playsinline></video>
@@ -62,18 +88,17 @@
     </div>
     
     <div>
-      <button class="btn btn-test" id="testBtn">🔔 Test Alarm Now</button>
-      <button class="btn btn-stop hidden" id="stopBtn">⏹ Stop Alarm</button>
+      <button class="btn btn-test" id="testBtn">🔔 Test Alarm</button>
+      <button class="btn btn-stop hidden" id="stopBtn">⏹ Stop</button>
     </div>
     
     <div class="instructions">
       <h3>How it works:</h3>
       <ul>
-        <li>Click "Test Alarm" to start</li>
-        <li>Allow camera access</li>
-        <li>Stand in frame (full body visible)</li>
-        <li>Do 10 squats - camera tracks your pose</li>
-        <li>Alarm stops when you hit 10!</li>
+        <li>Click location to get Fajr time for your area</li>
+        <li>When Fajr arrives, alarm goes off</li>
+        <li>Allow camera, stand in frame (full body)</li>
+        <li>Do 10 squats to dismiss alarm</li>
       </ul>
     </div>
   </div>
@@ -83,8 +108,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js"></script>
 
   <script>
-    console.log('App starting...');
-    
     let alarmActive = false;
     let sitUpCount = 0;
     let pose = null;
@@ -92,6 +115,9 @@
     let inSitUp = false;
     let lastAngle = null;
     let sitUpComplete = false;
+    let userLat = null, userLon = null;
+    let fajrTime = null;
+    let alarmTriggered = false;
     
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
@@ -102,11 +128,92 @@
     const testBtn = document.getElementById('testBtn');
     const stopBtn = document.getElementById('stopBtn');
     const videoContainer = document.getElementById('videoContainer');
+    const locationBtn = document.getElementById('locationBtn');
+    const locationStatus = document.getElementById('locationStatus');
+    const fajrTimeBox = document.getElementById('fajrTimeBox');
+    const fajrValue = document.getElementById('fajrValue');
     
-    console.log('Elements loaded');
+    // Get user location
+    locationBtn.addEventListener('click', () => {
+      locationBtn.disabled = true;
+      locationStatus.textContent = 'Getting location...';
+      
+      if (!navigator.geolocation) {
+        locationStatus.textContent = 'Geolocation not supported';
+        locationBtn.disabled = false;
+        return;
+      }
+      
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          userLat = pos.coords.latitude;
+          userLon = pos.coords.longitude;
+          locationStatus.textContent = `📍 ${userLat.toFixed(2)}, ${userLon.toFixed(2)}`;
+          calculateFajrTime();
+        },
+        (err) => {
+          locationStatus.textContent = 'Location denied - using default';
+          calculateFajrTime(40.7128, -74.0060); // NYC default
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+    
+    // Calculate Fajr time using simple formula
+    function calculateFajrTime(lat, lon) {
+      if (lat === undefined) lat = userLat;
+      if (lon === undefined) lon = userLon;
+      
+      const now = new Date();
+      const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+      
+      // Simplified Fajr calculation (approximate)
+      const declination = 23.45 * Math.sin((360/365) * (dayOfYear - 81) * Math.PI / 180);
+      const latRad = lat * Math.PI / 180;
+      const decRad = declination * Math.PI / 180;
+      
+      let hourAngle = Math.acos(-Math.tan(latRad) * Math.tan(decRad)) * 180 / Math.PI;
+      if (isNaN(hourAngle)) hourAngle = 90;
+      
+      // Fajr is about 1.5 hours before sunrise
+      const sunriseHour = 12 - hourAngle / 15;
+      const fajrHour = sunriseHour - 1.5;
+      
+      const fajrHours = Math.floor(fajrHour);
+      const fajrMins = Math.floor((fajrHour - fajrHours) * 60);
+      
+      fajrTime = new Date(now);
+      fajrTime.setHours(fajrHours, fajrMins, 0, 0);
+      
+      // If Fajr already passed today, set for tomorrow
+      if (fajrTime < now) {
+        fajrTime.setDate(fajrTime.getDate() + 1);
+      }
+      
+      fajrValue.textContent = fajrTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      fajrTimeBox.style.display = 'inline-block';
+      locationStatus.textContent = '✓ Fajr time calculated';
+      
+      // Check if Fajr is within 5 minutes
+      checkFajrAlarm();
+    }
+    
+    function checkFajrAlarm() {
+      if (alarmTriggered || !fajrTime) return;
+      
+      const now = new Date();
+      const diff = fajrTime - now;
+      
+      if (diff <= 0) {
+        // Fajr time! Start alarm
+        startAlarm();
+        alarmTriggered = true;
+      }
+    }
+    
+    setInterval(checkFajrAlarm, 30000);
     
     function playAlarm() {
-      console.log('Playing alarm...');
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       
       function playTone() {
@@ -117,7 +224,7 @@
         gain.connect(audioCtx.destination);
         osc.frequency.value = 880;
         osc.type = 'square';
-        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
         osc.start();
         osc.stop(audioCtx.currentTime + 0.3);
@@ -126,12 +233,9 @@
       playTone();
     }
     
-    function stopAlarm() {
-      alarmActive = false;
-    }
+    function stopAlarm() { alarmActive = false; }
     
     function initPose() {
-      console.log('Initializing pose...');
       pose = new Pose({
         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/${file}`
       });
@@ -145,7 +249,6 @@
       });
       
       pose.onResults(onPoseResults);
-      console.log('Pose initialized');
     }
     
     function onPoseResults(results) {
@@ -156,25 +259,38 @@
       if (results.poseLandmarks) {
         drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, {color: '#ffd700', lineWidth: 3});
         drawLandmarks(ctx, results.poseLandmarks, {color: '#ff6b6b', lineWidth: 2, radius: 4});
-        detectSitUp(results.poseLandmarks);
+        detectSquat(results.poseLandmarks);
       }
     }
     
-    function detectSitUp(landmarks) {
+    function detectSquat(landmarks) {
       if (!alarmActive) return;
       
-      // Squat detection: hip-knee-ankle angle
       const leftHip = landmarks[23];
       const leftKnee = landmarks[25];
       const leftAnkle = landmarks[27];
+      const rightHip = landmarks[24];
+      const rightKnee = landmarks[26];
+      const rightAnkle = landmarks[28];
       
-      if (!leftHip || !leftKnee || !leftAnkle) return;
+      // Use whichever side is more visible
+      let hip, knee, ankle;
+      const leftVis = (leftHip?.visibility || 0) + (leftKnee?.visibility || 0) + (leftAnkle?.visibility || 0);
+      const rightVis = (rightHip?.visibility || 0) + (rightKnee?.visibility || 0) + (rightAnkle?.visibility || 0);
       
-      const hip = {x: leftHip.x, y: leftHip.y};
-      const knee = {x: leftKnee.x, y: leftKnee.y};
-      const ankle = {x: leftAnkle.x, y: leftAnkle.y};
+      if (leftVis >= rightVis) {
+        hip = leftHip; knee = leftKnee; ankle = leftAnkle;
+      } else {
+        hip = rightHip; knee = rightKnee; ankle = rightAnkle;
+      }
       
-      const angle = calculateAngle(hip, knee, ankle);
+      if (!hip || !knee || !ankle) return;
+      
+      const angle = calculateAngle(
+        {x: hip.x, y: hip.y},
+        {x: knee.x, y: knee.y},
+        {x: ankle.x, y: ankle.y}
+      );
       
       // Squat: knee angle < 100 when down, > 160 when standing
       if (angle < 100 && !inSitUp) {
@@ -208,7 +324,7 @@
     
     function alarmSolved() {
       stopAlarm();
-      messageEl.textContent = '🎉 Done! Alarm dismissed!';
+      messageEl.textContent = '🎉 Done! Good morning!';
       messageEl.className = 'message success';
       if (camera) { camera.stop(); camera = null; }
       videoContainer.classList.remove('active');
@@ -217,7 +333,6 @@
     }
     
     async function startAlarm() {
-      console.log('Starting alarm...');
       alarmActive = true;
       sitUpCount = 0;
       inSitUp = false;
@@ -240,15 +355,13 @@
           onFrame: async () => {
             if (pose) await pose.send({image: video});
           },
-          width: 640,
-          height: 480
+          width: 480,
+          height: 360
         });
         
         await camera.start();
         playAlarm();
-        console.log('Camera started');
       } catch (e) {
-        console.error('Error:', e);
         messageEl.textContent = 'Error: ' + e.message;
       }
     }
@@ -263,14 +376,8 @@
       testBtn.classList.remove('hidden');
     }
     
-    testBtn.addEventListener('click', () => {
-      console.log('Test button clicked');
-      startAlarm();
-    });
-    
+    testBtn.addEventListener('click', startAlarm);
     stopBtn.addEventListener('click', stopAlarmHandler);
-    
-    console.log('Event listeners attached');
   </script>
 </body>
 </html>
